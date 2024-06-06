@@ -1,0 +1,42 @@
+body, html {
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+#canv {
+    float: left;
+}
+
+#sidebar {
+    width: 35%;
+    height: 100%;
+    float: right;
+    background-color: gainsboro;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#colorpicker {
+    width: 15%;
+    height: 4%;
+    margin-bottom: 5%;
+}
+
+#size {
+    text-align: center;
+    height: 4%;
+    width: 8%;
+    font-size: 90%;
+}
+
+.button {
+    width: 9%;
+    height: 5%;
+    margin: 1%;
+}
+
+#clear {
+    margin-top: 3% !important;
+}
