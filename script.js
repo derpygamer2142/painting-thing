@@ -9,7 +9,10 @@ const increase = document.getElementById("increase")
 const sizeinput = document.getElementById("size")
 const decrease = document.getElementById("decrease")
 const clearbutton = document.getElementById("clear")
+const switchPaint = document.getElementById("switchPaint")
+const switchFill = document.getElementById("switchFill")
 
+let tool = "paint"
 let mousedown = false
 let mouseX = 0
 let mouseY = 0
@@ -25,37 +28,40 @@ function toRgb(hex) {
     } : null;
 }
 
-function v(x, y, sr, sg, sb, width, height, checked, data) {
-    if ((x >= 0) && (x <= width) && (y >= 0) && (y <= height) && (!checked.includes(JSON.stringify([x, y])))) {
-        let i = ((y * width) + x) * 4
-        if ((data[i] === sr) && (data[i+1] === sg) && (data[i+2] === sb)) {
-            return true
-        }
+function v(x, y, sr, sg, sb, width, height, data) {
+    let i = ((y * width) + x) * 4
+    if ((x >= 0) && (x <= canv.width) && (y >= 0) && (y <= canv.height) && (data[i] === sr) && (data[i+1] === sg) && (data[i+2] === sb)) {
+        return true
     }
+    
+        
+        
     return false
 }
 
-function spread(x, y, r, g, b, data, width, height, sr, sg, sb,checked) {
-    if ((x >= 0) && (x <= width) && (y >= 0) && (y <= height) && (!checked.includes(JSON.stringify([x, y])))) {
-        let i = ((y * width) + x) * 4
-        console.log(i)
-        if ((data[i] === sr) && (data[i+1] === sg) && (data[i+2] === sb)) {
-            //ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
+function spread(x, y, r, g, b, data, width, height, sr, sg, sb) {
+    let i = ((y * width) + x) * 4
+    if (v(x,y,sr,sg,sb,width,height,data)) {
+        //console.log(i)
+            //ctx.fillStyle = `rgb(${r},${g},${b})`
+            // ctx.fillStyle = "#ff0000"
+            // ctx.fillRect(x, height-y, 1, 1)
             data[i] = r
             data[i+1] = g
             data[i+2] = b
-            data[i+3] = 0
+            data[i+3] = 255
+            //console.log(data[i])
             let list = []
-            if (v(x+0,y+1,sr,sg,sb,width,height,checked, data)) {
+            if (v(x+0,y+1,sr,sg,sb,width,height, data)) {
                 list.push([x,y+1])
             }
-            if (v(x+0,y-1,sr,sg,sb,width,height,checked, data)) {
+            if (v(x+0,y-1,sr,sg,sb,width,height, data)) {
                 list.push([x,y-1])
             }
-            if (v(x+1,y+0,sr,sg,sb,width,height,checked, data)) {
+            if (v(x+1,y+0,sr,sg,sb,width,height, data)) {
                 list.push([x+1,y+0])
             }
-            if (v(x-1,y+0,sr,sg,sb,width,height,checked, data)) {
+            if (v(x-1,y+0,sr,sg,sb,width,height, data)) {
                 list.push([x-1,y+0])
             }
             return JSON.stringify(list) === "[]" ? false : list//[[x, y-1],[x+1, y],[x, y+1],[x-1, y]]
@@ -64,10 +70,6 @@ function spread(x, y, r, g, b, data, width, height, sr, sg, sb,checked) {
             spread(x-1, y+1, r, g, b, data, width, height, sr, sg, sb)
             spread(x+1, y+1, r, g, b, data, width, height, sr, sg, sb)
             
-        }
-    }
-    if (checked.includes(JSON.stringify([x, y]))) {
-        console.log("checked")
     }
     return false
     
@@ -77,16 +79,15 @@ function spread(x, y, r, g, b, data, width, height, sr, sg, sb,checked) {
 
 function startfill(x, y, r, g, b) {
     let imagedata = ctx.getImageData(0, 0, canv.width, canv.height)
-    console.log(imagedata)
+    //console.log(imagedata)
     let data = imagedata.data
     let s = Date.now()
     
     let tocheck = [[x, y]]
-    let checked = []
     let si = ((y* canv.width) + x) * 4
     let [sr, sg, sb] = [data[si],data[si+1],data[si+2]]
     let f = 0
-    while (f < 10000 && (tocheck.length > 0)) { // tocheck.length > 0)
+    while ((tocheck.length > 0)) { // f < 1000000 && 
         //console.log(tocheck.length)
         f += 1
         // if (f > 500) {
@@ -94,18 +95,18 @@ function startfill(x, y, r, g, b) {
         //     return
         // }
         //let i = ((tocheck[0][1]* canv.height) + tocheck[0][0]) * 4
-        let e = spread(tocheck[0][0], tocheck[0][1], r, g, b, data, canv.width, canv.height, sr, sg, sb, checked)
-        checked.push(JSON.stringify(tocheck[0]))
+        let e = spread(tocheck[0][0], tocheck[0][1], r, g, b, data, canv.width, canv.height, sr, sg, sb)
         tocheck.reverse()
         tocheck.pop()
         tocheck.reverse()
         if (Array.isArray(e)) {
-            console.log("added")
+            //console.log("added")
             tocheck = tocheck.concat(e)
         }
 
     }
     //console.log(imagedata)
+    console.log(data)
     ctx.putImageData(imagedata,0,0)
     console.log(ctx.getImageData(0, 0, canv.width, canv.height))
     console.log(Date.now() - s)
@@ -139,19 +140,32 @@ clearbutton.addEventListener("click", (e) => {
     ctx.fillRect(0,0,canv.width,canv.height)
 })
 
+switchPaint.addEventListener("click", (e) => {
+    tool = "paint"
+})
 
+switchFill.addEventListener("click", (e) => {
+    tool = "fill"
+})
 
 function main() {
     size = sizeinput.value
     color = colorpicker.value
 
     if (mousedown) {
-        ctx.fillStyle = color
-        ctx.fillRect(mouseX - (size/2),mouseY - (size/2),size,size)
+        if (tool === "paint") {
+            ctx.fillStyle = color
+            ctx.fillRect(mouseX - (size/2),mouseY - (size/2),size,size)
+        }
+        else if (tool === "fill") {
+            mousedown = false
+            let col = toRgb(color)
+            startfill(mouseX, canv.height, col.r, col.g, col.b)
+        }
     }
 
 }
 
 setInterval(main,15)
 
-startfill(0, 0, 255, 0, 0)
+//startfill(0, 0, 255, 1, 1)
