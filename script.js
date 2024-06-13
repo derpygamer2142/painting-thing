@@ -1,8 +1,20 @@
 const canv = document.getElementById("canv")
 const ctx = canv.getContext("2d")
-
+ctx.imageSmoothingEnabled = false
 canv.width = window.innerWidth*.65
 canv.height = window.innerHeight
+
+let canvimg = ctx.getImageData(0,0,canv.width,canv.height)
+let pixels = canvimg.data
+for (let e = 0; e < pixels.length; e += 4) {
+    pixels[e+0] = 255
+    pixels[e+1] = 255
+    pixels[e+2] = 255
+    pixels[e+3] = 255
+}
+
+ctx.putImageData(canvimg,0,0)
+
 
 const colorpicker = document.getElementById("colorpicker")
 const increase = document.getElementById("increase")
@@ -28,9 +40,11 @@ function toRgb(hex) {
     } : null;
 }
 
-function v(x, y, sr, sg, sb, width, height, data) {
+
+function v(x, y, sr, sg, sb, width, height, data, tr, tg, tb) {
     let i = ((y * width) + x) * 4
-    if ((x >= 0) && (x <= canv.width) && (y >= 0) && (y <= canv.height) && (data[i] === sr) && (data[i+1] === sg) && (data[i+2] === sb)) {
+
+    if ((x >= 0) && (x <= canv.width) && (y >= 0) && (y <= canv.height) && (data[i] === sr) && (data[i+1] === sg) && (data[i+2] === sb) && !((data[i] === tr) && (data[i+1] === tg) && (data[i+2] === tb))) {
         return true
     }
     
@@ -39,9 +53,15 @@ function v(x, y, sr, sg, sb, width, height, data) {
     return false
 }
 
+/*
+0x0
+0xx
+000
+*/
+
 function spread(x, y, r, g, b, data, width, height, sr, sg, sb) {
     let i = ((y * width) + x) * 4
-    if (v(x,y,sr,sg,sb,width,height,data)) {
+    if (v(x,y,sr,sg,sb,width,height,data, r, g, b)) {
         //console.log(i)
             //ctx.fillStyle = `rgb(${r},${g},${b})`
             // ctx.fillStyle = "#ff0000"
@@ -52,16 +72,16 @@ function spread(x, y, r, g, b, data, width, height, sr, sg, sb) {
             data[i+3] = 255
             //console.log(data[i])
             let list = []
-            if (v(x+0,y+1,sr,sg,sb,width,height, data)) {
+            if (v(x+0,y+1,sr,sg,sb,width,height, data, r, g, b)) {
                 list.push([x,y+1])
             }
-            if (v(x+0,y-1,sr,sg,sb,width,height, data)) {
+            if (v(x+0,y-1,sr,sg,sb,width,height, data, r, g, b)) {
                 list.push([x,y-1])
             }
-            if (v(x+1,y+0,sr,sg,sb,width,height, data)) {
+            if (v(x+1,y+0,sr,sg,sb,width,height, data, r, g, b)) {
                 list.push([x+1,y+0])
             }
-            if (v(x-1,y+0,sr,sg,sb,width,height, data)) {
+            if (v(x-1,y+0,sr,sg,sb,width,height, data, r, g, b)) {
                 list.push([x-1,y+0])
             }
             return JSON.stringify(list) === "[]" ? false : list//[[x, y-1],[x+1, y],[x, y+1],[x-1, y]]
@@ -87,7 +107,7 @@ function startfill(x, y, r, g, b) {
     let si = ((y* canv.width) + x) * 4
     let [sr, sg, sb] = [data[si],data[si+1],data[si+2]]
     let f = 0
-    while ((tocheck.length > 0)) { // f < 1000000 && 
+    while ((tocheck.length > 0)) { // f < 100000 && 
         //console.log(tocheck.length)
         f += 1
         // if (f > 500) {
@@ -102,13 +122,14 @@ function startfill(x, y, r, g, b) {
         if (Array.isArray(e)) {
             //console.log("added")
             tocheck = tocheck.concat(e)
+            //console.log(tocheck[tocheck.length-1])
         }
 
     }
     //console.log(imagedata)
-    console.log(data)
+    //console.log(data)
     ctx.putImageData(imagedata,0,0)
-    console.log(ctx.getImageData(0, 0, canv.width, canv.height))
+    //console.log(ctx.getImageData(0, 0, canv.width, canv.height))
     console.log(Date.now() - s)
     //spread(x, y, r, g, b, data, canv.width, canv.height, data[i], data[i+1], data[i+2])
 }
@@ -151,16 +172,22 @@ switchFill.addEventListener("click", (e) => {
 function main() {
     size = sizeinput.value
     color = colorpicker.value
-
+    if ((mouseX < 0) || (mouseX > canv.width) || (mouseY < 0) || (mouseY > canv.height)) {
+        return
+    }
     if (mousedown) {
         if (tool === "paint") {
             ctx.fillStyle = color
             ctx.fillRect(mouseX - (size/2),mouseY - (size/2),size,size)
         }
         else if (tool === "fill") {
+
             mousedown = false
             let col = toRgb(color)
-            startfill(mouseX, canv.height, col.r, col.g, col.b)
+            startfill(mouseX, mouseY, col.r, col.g, col.b)
+            console.log(mouseX, mouseY)
+            console.log("fill")
+            console.log(col)
         }
     }
 
